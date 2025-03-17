@@ -12,6 +12,7 @@ const URL = "https://67cb83443395520e6af589f6.mockapi.io/api/v1/"
 function App() {
   const [posts, setPosts] = useState([]);
 
+
   //El hook useEffect se ejecuta
 
   useEffect(() => {
@@ -19,65 +20,126 @@ function App() {
   }, [])
   // console.log("Creando componente App")
 
-  function getPosts() {
-    // console.log("Obteniendo posts...")
+  // console.log("Creando componente App")
+  async function getPosts() {
 
-    axios.get(`${URL}/posts`)
-      .then(response => {
-        const postsMockapi = response.data;
-        setPosts(postsMockapi);
-      })
-      .catch(error => {
-        console.error(error);
-      })
+    try {
+      //Vamos a colocal el codigo que queremos que se ejecute.
+      // console.log("Obteniendo posts...")
+      const { data } = await axios.get(`${URL}/posts`)
+      // console.log(data)
+
+      setPosts(data)
+    }
+    catch (error) {
+      console.warn(error)
+      alert("Ocurrió un error al obtener los posts ")
+    }
   }
+
+  // function getPosts() {
+  //   // console.log("Obteniendo posts...")
+
+  //   axios.get(`${URL}/posts`)
+  //     .then(response => {
+  //       const postsMockapi = response.data;
+  //       setPosts(postsMockapi);
+  //     })
+  //     .catch(error => {
+  //       console.error(error);
+  //     })
+  // }
 
 
   function markAsRead(id) {
-    // console.log(" marcar como leido", id)
+    console.log(" marcar como leido", id)
 
     const post = posts.find((post) => {
-      if(post.id === id) {
+      if (post.id === id) {
         return true
       }
-      })
+    })
 
-      post.alreadyRead = true
-      // const copiaPosts = [...posts]
-      // setPosts(copiaPosts)
+    post.alreadyRead = true
+    // const copiaPosts = [...posts]
+    // setPosts(copiaPosts)
 
-      setPosts([...posts])
+    setPosts([...posts])
 
   }
 
 
-  const { register, handleSubmit, formState: {errors,isValid} } = useForm();
+  const { register, handleSubmit, formState: { errors, isValid } } = useForm();
 
 
-  function addPost(data) {
-    console.log(data);
-    //toma la data del form y agrega un nuevo post
-    // evento.preventDefault()
-    // const elements = evento.target.elements;
-    // const {title, email, description} = elements;
+  //funcion para agregar posts
+  async function addPost(data) {
+    
+    try {
+      console.log(data);
 
-    // #Creamos el nuevo post en base a la data del form.
-    const post = {
-      title: data.title,
-      email: data.email,
-      description: data.description,
-      id: posts.length + 1
+      //toma la data del form y agrega un nuevo post
+      // evento.preventDefault()
+      // const elements = evento.target.elements;
+      // const {title, email, description} = elements;
+  
+      // #Creamos el nuevo post en base a la data del form.
+      const newPost = {
+        title: data.title,
+        email: data.email,
+        description: data.description,
+        // id: Date.now(),
+        alreadyRead: false,
+        active: true, //podemos no usarlo.
+        createdAt: new Date().toISOString(),
+      };
+
+      const response = await axios.post(`${URL}/posts`, newPost)
+
+      // getPosts()
+      setPosts(  [  ...posts, response.data  ]  )
+console.log(response.data)
+
+    } catch (error) {
+      console.log(error)
+      alert("No se pudo crear el post")
     }
-    //hacemos una copia del array de posts y le agregamos el nuevo post
-    const postCopy = [...posts];
-    postCopy.push(post);
-    //Actualizamos el estado de posts. 
-    setPosts(postCopy);
+
+    // //hacemos una copia del array de posts y le agregamos el nuevo post
+    // const postCopy = [...posts];
+    // postCopy.push(post);
+    // //Actualizamos el estado de posts. 
+    // setPosts(postCopy);
+  }
+
+  async function deletePost(id) {
+    console.log("Borrar post con id", id)
+
+    try {
+      const confirmDelete = confirm("Está seguro que desea borrar?")
+      if(confirmDelete) {
+        await axios.delete(`${URL}/posts/${id}`)
+
+        getPosts()
+      }
+    } catch (error) {
+      console.log(error)
+      alert("No se pudo borrar el post")
+    }
+
+    // //Buscamos la posición en el elemento 
+    // const indice = posts.findIndex(post => post.id === id)
+
+    // //Generar una copia del array de posts (estado)
+    // const postCopy = [...posts]
+    // postCopy.splice(indice, 1) // eliminamos en elemento 
+    // setPosts(postCopy) //Actualizamos el estado de posts.
+
   }
 
   return (
     <>
-      <Title titulo="Blog App" subtitle="Un blog para estar comunicados."/>
+      <Title titulo="Blog App" subtitle="Un blog para estar comunicados." />
       <Title titulo="Crea tu primer post" />
       <form className='post-form' onSubmit={handleSubmit(addPost)}>
 
@@ -110,11 +172,11 @@ function App() {
           })} id='description'></textarea>
         </div>
 
-        <button className='button' type="submit" disabled={ !isValid }>Crear post</button>
+        <button className='button' type="submit" disabled={!isValid}>Crear post</button>
       </form>
       <Title titulo="Posts creados" />
 
-      <PostsList posteos={posts} markAsRead={markAsRead} />
+      <PostsList posteos={posts} markAsRead={markAsRead} deletePost={deletePost} />
     </>
   )
 }
